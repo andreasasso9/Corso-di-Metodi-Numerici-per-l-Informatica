@@ -38,22 +38,21 @@ int main(int argc, char** argv) {
                 } 
             }
 
+			start=MPI_Wtime()*1000; //conversion in ms
+
             //sends portions of array to all procs
             MPI_Scatter(sum_array, n/world_size, MPI_INT, recv_array, n/world_size, MPI_INT, 0,MPI_COMM_WORLD);
 
             MPI_Barrier(MPI_COMM_WORLD);
-			if (rank==0)
-            	start=MPI_Wtime()*1000; //conversion in ms
+            
             for(int i=0;i<n/world_size;i++){
                 sum+=recv_array[i];
             }
 
             MPI_Reduce(&sum, &total_sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
             MPI_Barrier(MPI_COMM_WORLD);
-			if (rank==0) {
-            	end=MPI_Wtime()*1000-start;
-            	mean+=end;
-			}
+            end=MPI_Wtime()*1000-start;
+        	mean+=end;
         }
 
         //print mean time of execution 
