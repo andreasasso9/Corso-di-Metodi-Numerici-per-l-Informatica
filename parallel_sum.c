@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-
+    double* final_sum_array = calloc(max_iterations,sizeof(double));//output array
 
     //scale input n "scale_times" times
     for(int scale=0;scale<scale_times;scale++){
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
         for(int repeat=0;repeat<max_iterations;repeat++){
             if(rank==0){
                 for(int i=0;i<n;i++){
-                    sum_array[i]=(rand()%3)/10.0;
+                    sum_array[i]=(rand()%5)/100.0;
                 } 
             }
             double sum=0;
@@ -69,18 +69,24 @@ int main(int argc, char** argv) {
             for(int i=0;i<n/world_size;i++){
                 sum+=recv_array[i];
             }
-            printf("sum %.2f\n\n",sum);
             reduce(&sum,rank,world_size); //all procs reduce sum to proc 0
             MPI_Barrier(MPI_COMM_WORLD);
             end=MPI_Wtime()*1000-start;
         	mean+=end;
-            
+            final_sum_array[repeat]=sum;
         }
+        
 
+       
         //print mean time of execution 
         MPI_Reduce(&mean, &total_mean, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
         if(rank==0){
+             //print sums
+            for(int i=0;i<max_iterations;i++){
+                printf("sum at iteration %d is %.2f\n",i,final_sum_array[i]);
+            }
+
             printf("Mean execution time with %d processes, %d iterations and n=%d: %.2f\n\n",world_size,max_iterations,n,total_mean/max_iterations);    
         }
         n*=2;    
