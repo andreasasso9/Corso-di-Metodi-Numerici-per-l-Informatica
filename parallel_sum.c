@@ -21,9 +21,7 @@ void reduce(double *sum, int rank, int world) {
            }
             distance=step;
             step*=2;
-        }
-    
-        
+        }        
 }
 
 
@@ -55,39 +53,49 @@ int main(int argc, char** argv) {
         for(int repeat=0;repeat<max_iterations;repeat++){
             if(rank==0){
                 for(int i=0;i<n;i++){
-                    sum_array[i]=(rand()%5)/100.0;
+                   sum_array[i]=(rand()%5)/100.0;
                 } 
             }
             double sum=0;
-            MPI_Barrier(MPI_COMM_WORLD);
-			start=MPI_Wtime()*1000; //conversion in ms
-
             //sends portions of array to all procs
+            MPI_Barrier(MPI_COMM_WORLD);
+			start=MPI_Wtime();
+
             MPI_Scatter(sum_array, n/world_size, MPI_DOUBLE, recv_array, n/world_size, MPI_DOUBLE, 0,MPI_COMM_WORLD);
 
-            
             for(int i=0;i<n/world_size;i++){
-                sum+=recv_array[i];
+                sum+=*recv_array+i;
             }
             reduce(&sum,rank,world_size); //all procs reduce sum to proc 0
             MPI_Barrier(MPI_COMM_WORLD);
-            end=MPI_Wtime()*1000-start;
-        	mean+=end;
+            end=MPI_Wtime()-start;
+        	mean+=end*1000; //conversion in ms
             final_sum_array[repeat]=sum;
         }
         
-
-       
         //print mean time of execution 
         MPI_Reduce(&mean, &total_mean, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
         if(rank==0){
-             //print sums
+            //Print sums
             for(int i=0;i<max_iterations;i++){
                 printf("sum at iteration %d is %.2f\n",i,final_sum_array[i]);
             }
 
-            printf("Mean execution time with %d processes, %d iterations and n=%d: %.2f\n\n",world_size,max_iterations,n,total_mean/max_iterations);    
+            printf("Mean execution time with %d processes, %d iterations and n=%d: %.2f\n\n",world_size,max_iterations,n,total_mean/world_size);    
+        
+            //Print on file
+            FILE *f = fopen("results.txt", "a");  
+            if (f == NULL) {
+                perror("Error file could not be opened");
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+
+            fprintf(f, "Processes: %d, Input n=%d, Time: %.2f\n",
+                     world_size, n, total_mean/world_size);
+            fclose(f);
+
+        
         }
         n*=2;    
         free(sum_array);
