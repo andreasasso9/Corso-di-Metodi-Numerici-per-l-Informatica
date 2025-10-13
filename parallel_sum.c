@@ -72,8 +72,9 @@ int main(int argc, char** argv) {
         	mean+=end*1000; //conversion in ms
             final_sum_array[repeat]=sum;
         }
-        
+
         //print mean time of execution 
+        mean=mean/max_iterations;
         MPI_Reduce(&mean, &total_mean, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
         if(rank==0){
@@ -89,6 +90,10 @@ int main(int argc, char** argv) {
             if (f == NULL) {
                 perror("Error file could not be opened");
                 MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+            //At first iteration add a new line in output fil
+            if(!scale){
+                fprintf(f, "\n");
             }
 
             fprintf(f, "Processes: %d, Input n=%d, Time: %.2f\n",
