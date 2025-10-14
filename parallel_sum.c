@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#define scalable_n 1200000
+#define scalable_n 1600000
 #define max_iterations 5
 #define scale_times 5
 
@@ -10,10 +10,11 @@
 void reduce(double *sum, int rank, int world) {
     int step = 2;
     int distance = 1; 
+    MPI_Request req;
     while (distance < world) {
         if ((rank % step) != 0) {
-                MPI_Send(sum, 1, MPI_DOUBLE, rank-distance, 0, MPI_COMM_WORLD);
-                break; // chi manda esce
+                MPI_Isend(sum, 1, MPI_DOUBLE, rank-distance, 0, MPI_COMM_WORLD, &req);
+                break; // Send and Exit
         } else {
             double received = 0.0;
             MPI_Recv(&received, 1, MPI_DOUBLE, rank+distance,0 , MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -60,14 +61,12 @@ int main(int argc, char** argv) {
             //sends portions of array to all procs
             MPI_Barrier(MPI_COMM_WORLD);
 			start=MPI_Wtime();
-
             MPI_Scatter(sum_array, n/world_size, MPI_DOUBLE, recv_array, n/world_size, MPI_DOUBLE, 0,MPI_COMM_WORLD);
 
             for(int i=0;i<n/world_size;i++){
                 sum+=*recv_array+i;
             }
             reduce(&sum,rank,world_size); //all procs reduce sum to proc 0
-            MPI_Barrier(MPI_COMM_WORLD);
             end=MPI_Wtime()-start;
         	mean+=end*1000; //conversion in ms
             final_sum_array[repeat]=sum;
@@ -86,7 +85,7 @@ int main(int argc, char** argv) {
             printf("Mean execution time with %d processes, %d iterations and n=%d: %.2f\n\n",world_size,max_iterations,n,total_mean/world_size);    
         
             //Print on file
-            FILE *f = fopen("results.txt", "a");  
+            FILE *f = fopen("red_results.txt", "a");  
             if (f == NULL) {
                 perror("Error file could not be opened");
                 MPI_Abort(MPI_COMM_WORLD, 1);

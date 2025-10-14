@@ -6,28 +6,25 @@
 #define max_iterations 5
 #define scale_times 5
 
-void allReduce(int* local_sum, int rank, int world_size) {
-	for (int step = 1; step < world_size; step++) {
+void allReduce(double* local_sum, int rank, int world_size) {
+	for (int step = 1; step <= world_size/2; step++) {
 		int partner = rank ^ step; // XOR to find partner
-		int send_sum = *local_sum;
-		int recv_sum = 0;
-		int counter = 1;
+		double recv_sum = 0;
 
-		MPI_Sendrecv(&send_sum, 1, MPI_INT, partner, 0,
-			&recv_sum, 1, MPI_INT, partner, 0,
+       
+		MPI_Sendrecv(local_sum, 1, MPI_DOUBLE, partner, 0,
+			&recv_sum, 1, MPI_DOUBLE, partner, 0,
 			MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
 		*local_sum += recv_sum;
-		counter*=2;
-		if (counter>=world_size) 
-			break; // Stop if all processes have contributed
+	
 	}
 }
 
 int main(int argc, char** argv) {
     // Initialize the MPI environment
     MPI_Init(NULL, NULL);
-    srand((unsigned int) time(0)); 
+    srand((double) time(0)); 
     float start,end;
     int n=scalable_n;
 
@@ -59,35 +56,33 @@ int main(int argc, char** argv) {
     //scale input n "scale_times" times
     for(int scale=0;scale<scale_times;scale++){
 
-        int* sum_array = calloc(n,sizeof(int));
-        int* recv_array = calloc(n/world_size,sizeof(int));
+        double* sum_array = calloc(n,sizeof(double));
+        double* recv_array = calloc(n/world_size,sizeof(double));
         float total_mean;
         float mean=0;
-		int sum=0;
+		double sum=0;
         
         //for each input value repeat executions "max_iterations" times to obtain mean
         for(int repeat=0;repeat<max_iterations;repeat++){
             
             if(rank==0){
                 for(int i=0;i<n;i++){
-                    sum_array[i]=rand()%3;
+                    sum_array[i]=(rand()%5)/10.0;
                 } 
             }
 
+            MPI_Barrier(new_comm);
 			start=MPI_Wtime()*1000; //conversion in ms
 
             //sends portions of array to all procs
-            MPI_Scatter(sum_array, n/world_size, MPI_INT, recv_array, n/world_size, MPI_INT, 0,new_comm);
+            MPI_Scatter(sum_array, n/world_size, MPI_INT, recv_array, n/world_size, MPI_DOUBLE, 0,new_comm);
 
-            MPI_Barrier(new_comm);
 
             for(int i=0;i<n/world_size;i++){
                 sum+=recv_array[i];
             }
 
             allReduce(&sum, rank, world_size);
-            MPI_Barrier(new_comm);
-
         	end=MPI_Wtime()*1000-start;
             mean+=end;
         }
@@ -100,8 +95,27 @@ int main(int argc, char** argv) {
 		
 		if (rank == 0) {
 			printf("\n\nMean execution time with %d processes, %d iterations and n=%d: %.3f\n",world_size,max_iterations,n,total_mean/world_size);
-			printf("total sum is %d\n", sum);
+			
+            FILE *f = fopen("allReduce_results.txt", "a");  
+            if (f == NULL) {
+                perror("Error file could not be opened");
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+            if(!scale){
+                fprintf(f, "\n");
+            }
+
+            fprintf(f, "Input n=%d, Time: %.2f\n",
+                    n, mean);
+            fclose(f);
+          
+
 		}
+        if(!scale){ //print only first iteration to check if sum calculation is correct
+                 printf("total sum is %.2f, rank %d\n", sum,rank);
+        }
+
+       
         
         n*=2;    
         free(sum_array);
