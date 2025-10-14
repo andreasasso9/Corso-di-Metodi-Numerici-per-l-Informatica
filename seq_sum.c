@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#define scalable_n 1600000
+#define scalable_n 1200000
 #define max_iterations 5
 #define scale_times 5
 
@@ -22,11 +22,10 @@ int main(int argc, char** argv) {
             double sum=0;
 			double *arr=malloc(n*sizeof(double));
 			//generate n random numbers
-			for(int i=0;i<n;i++){
-				arr[i]=(rand()%3)/10.0;
-			}
-
             start=MPI_Wtime()*1000; //conversion in ms
+			for(int i=0;i<n;i++){
+				arr[i]=(rand()%5)/100.0;
+			}
             for(int i=0;i<n;i++){
                 sum+=arr[i];
             }
@@ -37,7 +36,17 @@ int main(int argc, char** argv) {
         }
 
         //print mean time of execution 
-        printf("Mean execution time with %d iterations and n=%d: %.3f\n\n",max_iterations,n,mean/max_iterations);    
+        mean=mean/max_iterations;
+        printf("Mean execution time with %d iterations and n=%d: %.3f\n\n",max_iterations,n,mean);    
+        FILE *f = fopen("seq_results.txt", "a");  
+        if (f == NULL) {
+            perror("Error file could not be opened");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        fprintf(f, "Input n=%d, Time: %.2f\n",
+                    n, mean);
+        fclose(f);
+
         n*=2;    
     }
 
