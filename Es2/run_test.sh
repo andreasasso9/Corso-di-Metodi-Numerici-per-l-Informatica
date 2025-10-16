@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🔹 Remove old text files before starting
+# Remove old text files before starting
 echo "Removing old .txt files..."
 rm -f ./*.txt
 echo "All .txt files removed (if any)."
@@ -18,7 +18,7 @@ echo "===================================="
 echo "Starting MPI tests"
 echo "===================================="
 
-# 1️⃣ Sequential program (fixed np = 1)
+# 1 Sequential program (fixed np = 1)
 echo ">>> Running: mat-vet-seq.out (np = 1)"
 
 # Initial matrix size
@@ -37,7 +37,7 @@ for ((j=1; j<=scale_times; j++)); do
 done
 
 
-# 2️⃣ Parallel program (variable np)
+# 2 Parallel program with row distribution (variable np)
 echo
 echo ">>> Running: mat-vet-row.out (np = 2, 4, 8)"
 
@@ -59,5 +59,29 @@ for ((j=1; j<=scale_times; j++)); do
     cols=$((cols * 2))
 done
 
+
+
+# 3 Parallel program with column distribution (variable np)
 echo
-echo "✅ All MPI tests completed successfully."
+echo ">>> Running: mat-vet-col.out (np = 2, 4, 8)"
+
+# Initial matrix size
+rows=100
+cols=120
+
+for ((j=1; j<=scale_times; j++)); do
+    for np in "${np_values_row[@]}"; do    
+        echo "--- Iteration $i: rows=$rows, cols=$cols ---"
+        for ((i=1; i<=iterations; i++)); do
+            echo ">> Executing: mpirun -np $np ./mat-vet-col.out . $rows $cols"
+            mpirun  --oversubscribe -np "$np" ./mat-vet-col.out . "$rows" "$cols"
+            echo "---------------------------------------------"
+        done
+    done
+    # Double matrix size
+    rows=$((rows * 2))
+    cols=$((cols * 2))
+done
+
+echo
+echo "All MPI tests completed successfully."
