@@ -3,163 +3,190 @@
 #include <math.h>
 #include <mpi.h> 
 
-
 /**
-* Function that multiplies a matrix by a vector
-*/
-void mat_vect_prod(double result_vector[], double *matrix, int rows, int cols, double prod_vector[]){
-
-    for(int i=0;i<rows;i++){
-        result_vector[i]=0;
-        for(int j=0;j<cols;j++){ 
-            result_vector[i] += matrix[i*cols+j]* prod_vector[j];
+ * Function that multiplies a matrix by a vector
+ * (usata anche per il caso per colonne)
+ */
+void mat_vect_prod(double result_vector[], double *matrix, int rows, int cols, double prod_vector[]) {
+    for (int i = 0; i < rows; i++) {
+        result_vector[i] = 0;
+        for (int j = 0; j < cols; j++) { 
+            result_vector[i] += matrix[i * cols + j] * prod_vector[j];
         } 
     }    
 }
 
-
 int main(int argc, char **argv) {
-
-    int i,j;
-    int nproc,rank;            
-    int rows,cols;                  //Matrix size
-    int local_cols;            //Local matrix rows
-    int local_prod_vector_size;
-    double *matrix,*local_matrix,*local_result_vector,*result_vector,*prod_vector,*local_prod_vector;
-    float start,end,mean;
+    int i, j;
+    int nproc, rank;            
+    int rows, cols;                  
+    int local_cols;           
+    double *matrix = NULL, *local_matrix, *local_result_vector, *result_vector = NULL, *prod_vector = NULL, *local_prod_vector;
+    double start, end, mean;
 
     MPI_Init(&argc, &argv);
-    MPI_Comm_size (MPI_COMM_WORLD, &nproc);
-    MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    //Root take input data then allocate and populate local matrix and product vector
-    if(rank == 0){
-        //Input data from argv or request user
-        if (argc > 3){
-            rows=atoi(argv[2]); //convert to int
-            cols=atoi(argv[3]);
-        }else{
-            printf("Insert rows number = \n"); 
+    // Root legge input e inizializza la matrice e il vettore
+    if (rank == 0) {
+        if (argc > 3) {
+            rows = atoi(argv[2]);
+            cols = atoi(argv[3]);
+        } else {
+            printf("Insert rows number = ");
             fflush(stdout);
-            scanf("%d",&rows); 
-                
-            printf("Insert columns number = \n"); 
+            scanf("%d", &rows);
+            printf("Insert columns number = ");
             fflush(stdout);
-            scanf("%d",&cols);
+            scanf("%d", &cols);
         }
-       
 
-        ////Local matrix cols for each proc
-        local_cols = cols/nproc; 
-        local_prod_vector_size = rows/nproc; 
-        
-        //Allocate matrix, product vector and final result vector
         matrix = malloc(rows * cols * sizeof(double));
-        prod_vector = malloc(sizeof(double)*cols);
-        result_vector =  malloc(sizeof(double)*rows); 
-        
-        //Populate product vector and matrix
-        for (j=0;j<cols;j++)
-                prod_vector[j]=j; 
+        prod_vector = malloc(cols * sizeof(double));
+        result_vector = malloc(rows * sizeof(double));
 
+        for (j = 0; j < cols; j++)
+            prod_vector[j] = j;
 
-        //Array for the matrix is populated using as the column number as displacement for each row
-        for (i=0;i<rows;i++){
-            for(j=0;j<cols;j++){
-                if (j==0)
-                    matrix[i*cols+j]= 1.0/(i+1)-1;
+        for (i = 0; i < rows; i++) {
+            for (j = 0; j < cols; j++) {
+                if (j == 0)
+                    matrix[i * cols + j] = 1.0 / (i + 1) - 1;
                 else
-                    matrix[i*cols+j]= 1.0/(i+1)-pow(1.0/2.0,j); 
+                    matrix[i * cols + j] = 1.0 / (i + 1) - pow(1.0 / 2.0, j);
             }
         }
-        
-        //Print the product vector and matrix if small
-        if (cols<11 && rows<11){  
-        printf("\nv: \n");   
-            for (j=0;j<cols;j++)
+
+        if (cols < 11 && rows < 11) {
+            printf("\nv: \n");
+            for (j = 0; j < cols; j++)
                 printf("%.2f ", prod_vector[j]);
-            printf("\n\n");
-        
-            printf("matrix: \n"); 
-            for (i=0;i<rows;i++){
-                for(j=0;j<cols;j++)
-                        printf("%.3f  ", matrix[i*cols+j] );
-                printf("\n\n");
+            printf("\n\nmatrix:\n");
+            for (i = 0; i < rows; i++) {
+                for (j = 0; j < cols; j++)
+                    printf("%.3f  ", matrix[i * cols + j]);
+                printf("\n");
             }
             fflush(stdout);
-        } 
-
-    } 
-
-    //Send rows,columns and local rows to each process so they can allocate their local matrix and result vector
-    MPI_Bcast(&rows,1,MPI_INT,0,MPI_COMM_WORLD);            
-    MPI_Bcast(&local_cols,1,MPI_INT,0,MPI_COMM_WORLD);      
-
-    local_matrix = malloc(rows * local_cols * sizeof(double));
-    local_result_vector = malloc(rows * sizeof(double));
-
-    //Send local product vector size and if not root allocate it
-    MPI_Bcast(&local_prod_vector_size,1,MPI_INT,0,MPI_COMM_WORLD);      
-    local_prod_vector = malloc(sizeof(double)*local_prod_vector_size);
-    
-
-    //each process populate prod_vector!
-    MPI_Scatter(
-        &prod_vector[0],local_prod_vector_size,MPI_DOUBLE,
-        &local_prod_vector[0], local_prod_vector_size, MPI_DOUBLE,
-        0,MPI_COMM_WORLD);  
-              
-
-    //Root send set of local columns of global matrix to each process so they can populate their local one
-    int local_matrix_size = rows*local_cols;
-    MPI_Scatter(
-        &matrix[0], local_matrix_size, MPI_DOUBLE,
-        &local_matrix[0], local_matrix_size, MPI_DOUBLE,
-        0, MPI_COMM_WORLD);
-
-    //Print local matrix if small enough
-	if (local_cols<11 && rows<11){
-        printf("local matrix %d : \n", rank); 
-        for(i = 0; i < rows; i++){
-            for(j = 0; j < local_cols; j++)         
-                printf("%.3f\t", local_matrix[i*local_cols+j]);
-            printf("\n\n");
         }
     }
-     
-    
-    //Each process calculate the local result vector
-    MPI_Barrier(MPI_COMM_WORLD);
-    start=MPI_Wtime();
-    mat_vect_prod(local_result_vector,local_matrix,rows,local_cols,local_prod_vector);
-        
-    //Results are gathered by root process and printed
-    MPI_Reduce(&local_result_vector[0],&result_vector[0],rows,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-    end=MPI_Wtime()-start;
 
-    MPI_Reduce(&end, &mean, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+    // Broadcast dimensioni
+    MPI_Bcast(&rows, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-    if(rank==0){ 
-        //Print result vector if small enough
-        if (local_cols<11 && rows<11){
-            for(i = 0; i < rows; i++){
-                printf("%f\n", result_vector[i]);
+    // Calcolo delle colonne locali
+    int base_cols = cols / nproc;
+    int remainder = cols % nproc;
+    local_cols = base_cols + (rank < remainder ? 1 : 0);
+    int local_matrix_size = rows * local_cols;
+
+    // Allocazioni locali
+    local_matrix = malloc(local_matrix_size * sizeof(double));
+    local_result_vector = malloc(rows * sizeof(double));
+    local_prod_vector = malloc(local_cols * sizeof(double));
+
+    // Root prepara sendcounts e displs per la distribuzione per colonne
+    int *sendcounts = NULL;
+    int *displs = NULL;
+    int *vec_sendcounts = NULL;
+    int *vec_displs = NULL;
+
+    if (rank == 0) {
+        sendcounts = malloc(nproc * sizeof(int));
+        displs = malloc(nproc * sizeof(int));
+        vec_sendcounts = malloc(nproc * sizeof(int));
+        vec_displs = malloc(nproc * sizeof(int));
+
+        displs[0] = 0;
+        vec_displs[0] = 0;
+
+        for (i = 0; i < nproc; i++) {
+            int local_cols_i = base_cols + (i < remainder ? 1 : 0);
+            sendcounts[i] = rows * local_cols_i;
+            vec_sendcounts[i] = local_cols_i;
+
+            if (i > 0) {
+                displs[i] = displs[i - 1] + sendcounts[i - 1];
+                vec_displs[i] = vec_displs[i - 1] + vec_sendcounts[i - 1];
             }
         }
-        printf("\n");
-
-
-        //Print execution time
-        FILE *f = fopen("result_vector_col.txt", "a");  
-        if (f == NULL) {
-                perror("Error file could not be opened");
-                MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-        fprintf(f,"Procs:%d, Time: %f, Matrix: %dx%d\n", nproc,mean/nproc,rows,cols);     
-        printf("Procs:%d, Time: %f, Matrix: %dx%d\n", nproc,mean/nproc,rows,cols);       
-        fclose(f);
     }
 
-    MPI_Finalize ();
+    // Scatterv per parti del vettore
+    MPI_Scatterv(
+        prod_vector, vec_sendcounts, vec_displs, MPI_DOUBLE,
+        local_prod_vector, local_cols, MPI_DOUBLE,
+        0, MPI_COMM_WORLD
+    );
+
+    // Scatterv per colonne della matrice
+    MPI_Scatterv(
+        matrix, sendcounts, displs, MPI_DOUBLE,
+        local_matrix, local_matrix_size, MPI_DOUBLE,
+        0, MPI_COMM_WORLD
+    );
+
+    // Stampa locale per debug
+    if (cols < 11 && rows < 11) {
+        printf("\nRank %d local matrix:\n", rank);
+        for (i = 0; i < rows; i++) {
+            for (j = 0; j < local_cols; j++)
+                printf("%.3f\t", local_matrix[i * local_cols + j]);
+            printf("\n");
+        }
+        printf("local vector (rank %d): ", rank);
+        for (j = 0; j < local_cols; j++)
+            printf("%.2f ", local_prod_vector[j]);
+        printf("\n");
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    start = MPI_Wtime();
+
+    // Ogni processo calcola il prodotto parziale
+    mat_vect_prod(local_result_vector, local_matrix, rows, local_cols, local_prod_vector);
+
+    // Somma i risultati parziali (somma per righe)
+    if (rank == 0)
+        result_vector = malloc(rows * sizeof(double));
+
+    MPI_Reduce(local_result_vector, result_vector, rows, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    end = MPI_Wtime() - start;
+    MPI_Reduce(&end, &mean, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        if (cols < 11 && rows < 11) {
+            printf("\nResult vector:\n");
+            for (i = 0; i < rows; i++)
+                printf("%f\n", result_vector[i]);
+        }
+
+        printf("\nProcs:%d, Time:%f, Matrix:%dx%d\n", nproc, mean / nproc, rows, cols);
+
+        FILE *f = fopen("result_vector_col.txt", "a");
+        if (f == NULL) {
+            perror("Error file could not be opened");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        fprintf(f, "Procs:%d, Time:%f, Matrix:%dx%d\n", nproc, mean / nproc, rows, cols);
+        fclose(f);
+
+        free(matrix);
+        free(prod_vector);
+        free(result_vector);
+        free(sendcounts);
+        free(displs);
+        free(vec_sendcounts);
+        free(vec_displs);
+    }
+
+    free(local_matrix);
+    free(local_result_vector);
+    free(local_prod_vector);
+
+    MPI_Finalize();
     return 0;  
 }
