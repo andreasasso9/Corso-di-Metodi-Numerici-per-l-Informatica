@@ -53,7 +53,7 @@ for ((j=1; j<=scale_times; j++)); do
     for np in "${np_values_row[@]}"; do    
         echo "--- Iteration $i: rows=$rows, cols=$cols ---"
         for ((i=1; i<=iterations; i++)); do
-            echo ">> Executing: mpirun -np $np ./mat-vet-row.out . $rows $cols"
+            echo ">> Executing: mpirun -np $np ./mat-vet-row.out  $rows $cols"
             mpirun  --oversubscribe --allow-run-as-root -np "$np" ./mat-vet-row.out "$rows" "$cols"
             echo "---------------------------------------------"
         done
@@ -77,7 +77,7 @@ for ((j=1; j<=scale_times; j++)); do
     for np in "${np_values_row[@]}"; do    
         echo "--- Iteration $i: rows=$rows, cols=$cols ---"
         for ((i=1; i<=iterations; i++)); do
-            echo ">> Executing: mpirun -np $np ./mat-vet-col.out . $rows $cols"
+            echo ">> Executing: mpirun -np $np ./mat-vet-col.out  $rows $cols"
             mpirun  --oversubscribe --allow-run-as-root -np "$np" ./mat-vet-col.out "$rows" "$cols"
             echo "---------------------------------------------"
         done
