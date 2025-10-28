@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
                 MPI_Abort(MPI_COMM_WORLD, 1);
         }
         fprintf(f,"Procs:%d, Time: %f, Matrix: %dx%d\n", nproc,end,rows,cols);       
-        printf("Procs:%d, Time: %f, Matrix: %dx%d\n", nproc,end,rows,cols);       
+        printf("Procs:%d, Time: %f; Matrix: %dx%d\n", nproc,end,rows,cols);       
         fclose(f);
     }
 
