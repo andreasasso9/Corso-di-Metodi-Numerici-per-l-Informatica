@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
             perror("Error file could not be opened");
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        fprintf(f, "Procs:%d, Time:%f, Matrix:%dx%d\n",
+        fprintf(f, "Procs:%d, Time:%f; Matrix:%dx%d\n",
                 nproc, mean / nproc, rows, cols);
         fclose(f);
 
