@@ -30,9 +30,9 @@ int main(int argc, char **argv) {
 
     // Root process: initialize matrix and vector
     if (rank == 0) {
-        if (argc > 3) {
-            rows = atoi(argv[2]);
-            cols = atoi(argv[3]);
+        if (argc > 1) {
+            rows = atoi(argv[1]);
+            cols = atoi(argv[2]);
         } else {
             printf("Insert rows number = ");
             fflush(stdout);

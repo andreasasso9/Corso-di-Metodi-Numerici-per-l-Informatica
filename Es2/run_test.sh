@@ -11,7 +11,7 @@ iterations=5
 #How many times to double rows/cols
 scale_times=5
 
-# MPI process counts for mat-vet-row.out
+# MPI process counts for parallel programs
 np_values_row=(2 4 8)
 
 echo "===================================="
@@ -32,7 +32,7 @@ mpicc mat-vet-col.c -o mat-vet-col.out -lm
 for ((j=1; j<=scale_times; j++)); do
     for ((i=1; i<=iterations; i++)); do
     echo "--- Iteration $i: rows=$rows, cols=$cols ---"
-    mpirun -np 1 --allow-run-as-root ./mat-vet-seq.out . "$rows" "$cols"
+    mpirun -np 1 --allow-run-as-root ./mat-vet-seq.out  "$rows" "$cols"
     echo "---------------------------------------------"
     done
     # Double matrix size
@@ -54,7 +54,7 @@ for ((j=1; j<=scale_times; j++)); do
         echo "--- Iteration $i: rows=$rows, cols=$cols ---"
         for ((i=1; i<=iterations; i++)); do
             echo ">> Executing: mpirun -np $np ./mat-vet-row.out . $rows $cols"
-            mpirun  --oversubscribe --allow-run-as-root -np "$np" ./mat-vet-row.out . "$rows" "$cols"
+            mpirun  --oversubscribe --allow-run-as-root -np "$np" ./mat-vet-row.out "$rows" "$cols"
             echo "---------------------------------------------"
         done
     done
@@ -78,7 +78,7 @@ for ((j=1; j<=scale_times; j++)); do
         echo "--- Iteration $i: rows=$rows, cols=$cols ---"
         for ((i=1; i<=iterations; i++)); do
             echo ">> Executing: mpirun -np $np ./mat-vet-col.out . $rows $cols"
-            mpirun  --oversubscribe --allow-run-as-root -np "$np" ./mat-vet-col.out . "$rows" "$cols"
+            mpirun  --oversubscribe --allow-run-as-root -np "$np" ./mat-vet-col.out "$rows" "$cols"
             echo "---------------------------------------------"
         done
     done

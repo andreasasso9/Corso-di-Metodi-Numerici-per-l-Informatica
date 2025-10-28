@@ -29,11 +29,11 @@ int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);	
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
-    
+   
     //Input data from argv or request user
-    if (argc > 3){
-            rows=atoi(argv[2]); //convert to int
-            cols=atoi(argv[3]);
+    if (argc > 1){
+            rows=atoi(argv[1]); //convert to int
+            cols=atoi(argv[2]);
     }else{
         printf("Insert rows number = \n"); 
         fflush(stdout);

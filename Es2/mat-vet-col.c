@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 
     /* Root prepara i dati */
     if (rank == 0) {
-        if (argc > 2) {
+        if (argc > 1) {
             rows = atoi(argv[1]);
             cols = atoi(argv[2]);
         } else {
