@@ -2,7 +2,7 @@
 
 # Remove old text files before starting
 echo "Removing old .txt files..."
-rm -f ./*.txt
+rm -f ./*.txt *.out
 echo "All .txt files removed (if any)."
 echo
 
@@ -25,10 +25,14 @@ echo ">>> Running: mat-vet-seq.out (np = 1)"
 rows=100
 cols=120
 
+mpicc mat-vet-seq.c -o mat-vet-seq.out -lm
+mpicc mat-vet-row.c -o mat-vet-row.out -lm
+mpicc mat-vet-col.c -o mat-vet-col.out -lm
+
 for ((j=1; j<=scale_times; j++)); do
     for ((i=1; i<=iterations; i++)); do
     echo "--- Iteration $i: rows=$rows, cols=$cols ---"
-    mpirun -np 1 ./mat-vet-seq.out . "$rows" "$cols"
+    mpirun -np 1 --allow-run-as-root ./mat-vet-seq.out . "$rows" "$cols"
     echo "---------------------------------------------"
     done
     # Double matrix size
@@ -50,7 +54,7 @@ for ((j=1; j<=scale_times; j++)); do
         echo "--- Iteration $i: rows=$rows, cols=$cols ---"
         for ((i=1; i<=iterations; i++)); do
             echo ">> Executing: mpirun -np $np ./mat-vet-row.out . $rows $cols"
-            mpirun  --oversubscribe -np "$np" ./mat-vet-row.out . "$rows" "$cols"
+            mpirun  --oversubscribe --allow-run-as-root -np "$np" ./mat-vet-row.out . "$rows" "$cols"
             echo "---------------------------------------------"
         done
     done
@@ -74,7 +78,7 @@ for ((j=1; j<=scale_times; j++)); do
         echo "--- Iteration $i: rows=$rows, cols=$cols ---"
         for ((i=1; i<=iterations; i++)); do
             echo ">> Executing: mpirun -np $np ./mat-vet-col.out . $rows $cols"
-            mpirun  --oversubscribe -np "$np" ./mat-vet-col.out . "$rows" "$cols"
+            mpirun  --oversubscribe --allow-run-as-root -np "$np" ./mat-vet-col.out . "$rows" "$cols"
             echo "---------------------------------------------"
         done
     done
