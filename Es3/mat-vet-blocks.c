@@ -124,7 +124,7 @@ int main (int argc, char **argv)
     local_matrix = calloc(local_matrix_size, sizeof(double));
     // Allocate space for the local result vector part (b_i partial)
     local_result_vector = malloc(local_rows * sizeof(double));
-
+    local_prod_vector = malloc(local_cols * sizeof(double));
     
     // This distributes the matrix vertically to the first column of processes (where row_coords == 0)
     if (row_coords == 0) { // Condition ensures only processes in the FIRST COLUMN (row_coords == 0) receive data
@@ -134,6 +134,17 @@ int main (int argc, char **argv)
         0, col_comm // Use the vertical communicator (col_comm)
         );    
     }
+    if (col_coords == 0) { // Processes in the FIRST ROW (col_coords == 0) get the input vector block
+        MPI_Scatter(
+        prod_vector, local_cols, MPI_DOUBLE,
+        local_prod_vector, local_cols, MPI_DOUBLE,
+        0, row_comm); // Use the horizontal communicator (row_comm)
+    }
+
+    // Broadcast the input vector block to all processes in the column
+    MPI_Bcast(
+        local_prod_vector, local_cols, MPI_DOUBLE,
+        0, col_comm);
 
     // Allocate space for the final local block A_i,j
     double *local_block = calloc(local_rows * local_cols, sizeof(double));
@@ -144,6 +155,8 @@ int main (int argc, char **argv)
     // This type selects local_rows elements, spaced by 'cols' (the full row length)
     MPI_Type_vector(local_rows, 1, cols, MPI_DOUBLE, &col_type); 
     MPI_Type_commit(&col_type);
+
+
 
     // Only processes that received the full strip (row_coords == 0) act as senders in their row_comm
     if (row_coords == 0) {
@@ -180,6 +193,9 @@ int main (int argc, char **argv)
         }
         free(colbuf);
     }
+
+
+
         MPI_Type_free(&col_type); // Free the custom datatype
         fflush(stdout);
         // Debug print of the final local block A_i,j
@@ -189,6 +205,11 @@ int main (int argc, char **argv)
                 printf("%.3f  ", local_block[i * local_cols + j]);
             printf("\n\n");
         }
+        printf("\nlocal vector (rank %d:%d): ", grid_coords[0],grid_coords[1]);
+        for (j = 0; j < local_cols; j++)
+            printf("%.2f ", local_prod_vector[j]);
+        printf("\n\n");
+        fflush(stdout);
     
     if (rank==0)
     {
