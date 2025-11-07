@@ -29,7 +29,7 @@ int main (int argc, char **argv)
 	/* lettura e inserimento dati*/
 	if (rank==0)
 	{
-		if (argc > 0) {
+		if (argc > 1) {
             n = atoi(argv[1]);
         } else {
            printf("Inserire il numero di elementi da sommare: \n");

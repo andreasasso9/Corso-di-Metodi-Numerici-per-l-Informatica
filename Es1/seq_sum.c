@@ -15,7 +15,7 @@ int main(int argc, char** argv){
         printf("Arg %d: %s\n",i,argv[i]);
     }
 
-    if (argc > 0) {
+    if (argc > 1) {
         n = atoi(argv[1]);
     } else {
            printf("Inserire il numero di elementi da sommare: \n");
