@@ -141,7 +141,10 @@ def k_means_user_reccomandation(person, mean, similarity=pearson_correlation):
 
 			# Similrity * score
 				totals.setdefault(item,0)
-				totals[item] += dataset[other][item]*(sim - dataset[person][item])
+				if item not in dataset[person]:
+					totals[item] += dataset[other][item]*sim
+				else:
+					totals[item] += dataset[other][item]*(sim - dataset[person][item])
 				
 				#prints person's entry
 				print(f'film: {item}, rating: {dataset[other][item]}, similarity*rating: {dataset[other][item]* sim}')
