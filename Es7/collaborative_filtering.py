@@ -66,21 +66,12 @@ def pearson_correlation(person1,person2):
 		r = numerator_value/denominator_value
 		return r 
 
-def most_similar_users(person,number_of_users):
-	# returns the number_of_users (similar persons) for a given specific person.
-	scores = [(pearson_correlation(person,other_person),other_person) for other_person in dataset if  other_person != person ]
-	
-	# Sort the similar persons so that highest scores person will appear at the first
-	scores.sort()
-	scores.reverse()
-	return scores[0:number_of_users]
 
-def user_reommendations(person, similarity):
+def user_recommendations(person, similarity):
 
 	# Gets recommendations for a person by using a weighted average of every other user's rankings
 	totals = {}
 	simSums = {}
-	rankings_list =[]
 	for other in dataset:
 		# don't compare me to myself
 		if other == person:
@@ -97,7 +88,7 @@ def user_reommendations(person, similarity):
 			# only score movies i haven't seen yet
 			if item not in dataset[person] or dataset[person][item] == 0:
 
-			# Similrity * score
+				# Similrity * score
 				totals.setdefault(item,0)
 				totals[item] += dataset[other][item]*sim
 				
@@ -114,15 +105,14 @@ def user_reommendations(person, similarity):
 	rankings.sort()
 	rankings.reverse()
 	# returns the recommended items
-	recommendataions_list = [recommend_item for score,recommend_item in rankings]
+	recommendataions_list = [(score, recommend_item) for score,recommend_item in rankings]
 	return recommendataions_list
 
-def k_means_user_reccomandation(person, mean, similarity=pearson_correlation):
+def k_neighbours_user_recommandation(person, mean, similarity=pearson_correlation):
 
 	# Gets recommendations for a person by using a weighted average of every other user's rankings
 	totals = {}
 	simSums = {}
-	rankings_list =[]
 	for other in dataset:
 		# don't compare me to myself
 		if other == person:
@@ -139,12 +129,13 @@ def k_means_user_reccomandation(person, mean, similarity=pearson_correlation):
 			# only score movies i haven't seen yet
 			if item not in dataset[person] or dataset[person][item] == 0:
 
-			# Similrity * score
+				# Similrity * score
 				totals.setdefault(item,0)
 				if item not in dataset[person]:
 					totals[item] += dataset[other][item]*sim
 				else:
-					totals[item] += dataset[other][item]*(sim - dataset[person][item])
+					totals[item] += sim * (dataset[other][item] - dataset[person][item])
+					
 				
 				#prints person's entry
 				print(f'film: {item}, rating: {dataset[other][item]}, similarity*rating: {dataset[other][item]* sim}')
@@ -161,39 +152,21 @@ def k_means_user_reccomandation(person, mean, similarity=pearson_correlation):
 	rankings.sort()
 	rankings.reverse()
 	# returns the recommended items
-	recommendataions_list = [recommend_item for score,recommend_item in rankings]
+	recommendataions_list = [(score, recommend_item) for score,recommend_item in rankings]
 	return recommendataions_list
-		
-def calculateSimilarItems(prefs,n=10):
-        # Create a dictionary of items showing which other items they
-        # are most similar to.
-        result={}
-        # Invert the preference matrix to be item-centric
-        itemPrefs=transformPrefs(prefs)
-        c=0
-        for item in itemPrefs:
-                # Status updates for large datasets
-                c+=1
-                if c%100==0: print("%d / %d" % (c,len(itemPrefs)))
-                # Find the most similar items to this one
-                scores=topMatches(itemPrefs,item,n=n,similarity=sim_distance)
-                result[item]=scores
-        return result
 
 if __name__ == '__main__':
 	print('Pearson correlation: ', end='')
-	print(user_reommendations('Toby', pearson_correlation))
+	print(user_recommendations('Toby', pearson_correlation))
 
 	print('Euclidian distance: ', end='')
-	print(user_reommendations('Toby', similarity_score))
+	print(user_recommendations('Toby', similarity_score))
 
 	total = 0
 	for item in dataset['Toby']:
-		
-
 		# Similrity * score
 		total += dataset['Toby'][item]
 
 	mean = total/len(dataset['Toby'])
 
-	print(k_means_user_reccomandation('Toby', mean))
+	print(k_neighbours_user_recommandation('Toby', mean))

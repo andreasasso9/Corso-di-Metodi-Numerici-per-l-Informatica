@@ -17,7 +17,7 @@ X = np.mean(A,-1); # media lungo l'ultimo asse, cioè 2
 img = plt.imshow(X)
 img.set_cmap('gray')
 plt.axis('off')
-#plt.show()
+plt.show()
 plt.savefig(f"{path}/original_image.png")
 
 # If full_matrices=True (default), u and vT have the shapes (M, M) and (N, N), respectively.
@@ -34,13 +34,13 @@ j=0
 for r in (5,20,100):
 	energy = S_vals[:r].sum() / S_vals.sum()
 	print(f"Porzione energia (sum sigma) per k={r}: {energy:.6f} ({energy*100:.2f} %)")
-	Xapprox = U[:,:r] @ S[0:r,:r] @ VT[:r,:]
+	Xapprox = U[:,:r] @ S[:r,:r] @ VT[:r,:]
 	plt.figure(j+1)
 	j +=1
 	img = plt.imshow(Xapprox)
 	img.set_cmap('gray')
 	plt.axis('off')
 	plt.title('r = ' + str(r))
-	#plt.show()
+	plt.show()
 	plt.savefig(f"{path}/compressed_image_r"+str(r)+".png")
 	

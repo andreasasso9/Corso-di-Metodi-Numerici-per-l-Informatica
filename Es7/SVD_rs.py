@@ -69,6 +69,7 @@ def svd_projection(k):
         plt.title(f'Proiezione SVD k={k}')
         path = Path('Es7/img')
         path.mkdir(parents=True, exist_ok=True)
+        plt.show()
         plt.savefig(f'{path}/svd_projection_k{k}.png')
 
 # Eseguiamo per k=2,3,4
