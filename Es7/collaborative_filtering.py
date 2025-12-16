@@ -108,7 +108,7 @@ def user_recommendations(person, similarity):
 	recommendataions_list = [(score, recommend_item) for score,recommend_item in rankings]
 	return recommendataions_list
 
-def k_neighbours_user_recommandation(person, mean, similarity=pearson_correlation):
+def k_neighbours_user_recommandation(person, similarity=pearson_correlation):
 
 	# Gets recommendations for a person by using a weighted average of every other user's rankings
 	totals = {}
@@ -119,6 +119,12 @@ def k_neighbours_user_recommandation(person, mean, similarity=pearson_correlatio
 			continue
 		sim = similarity(person,other)
 		
+		total = 0
+		for item in dataset[other]:
+		# Similrity * score
+			total += dataset[other][item]
+
+		mean = total/len(dataset[other])
 
 		# ignore scores of zero or lower
 		if sim <=0: 
@@ -131,10 +137,7 @@ def k_neighbours_user_recommandation(person, mean, similarity=pearson_correlatio
 
 				# Similrity * score
 				totals.setdefault(item,0)
-				if item not in dataset[person]:
-					totals[item] += dataset[other][item]*sim
-				else:
-					totals[item] += sim * (dataset[other][item] - dataset[person][item])
+				totals[item] += sim * (dataset[other][item] - mean)
 					
 				
 				#prints person's entry
@@ -146,8 +149,7 @@ def k_neighbours_user_recommandation(person, mean, similarity=pearson_correlatio
 
 		
 
-		# Create the normalized list
-
+	# Create the normalized list
 	rankings = [((total/simSums[item]) + mean, item) for item,total in totals.items()]
 	rankings.sort()
 	rankings.reverse()
@@ -162,11 +164,5 @@ if __name__ == '__main__':
 	print('Euclidian distance: ', end='')
 	print(user_recommendations('Toby', similarity_score))
 
-	total = 0
-	for item in dataset['Toby']:
-		# Similrity * score
-		total += dataset['Toby'][item]
 
-	mean = total/len(dataset['Toby'])
-
-	print(k_neighbours_user_recommandation('Toby', mean))
+	print(k_neighbours_user_recommandation('Toby'))
